@@ -34,3 +34,6 @@ CREATE TABLE IF NOT EXISTS mark_history (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mark_history_user_q ON mark_history(user_id, question_id);
 CREATE INDEX IF NOT EXISTS idx_mark_history_user ON mark_history(user_id);
+
+# 说明：
+#  -- 格式: "type_id", 如 "single_4" 这里直接贴到D1 db的console会导致语法错误，（console只有一行不能多行输入）删除注释再执行！
