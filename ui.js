@@ -31,50 +31,39 @@ export const ui = {
 
     getContainer() {
         return {
-            question: document.getElementById('question'),
-            options: document.getElementById('options'),
-            submit: document.getElementById('submit'),
-            prevBtn: document.getElementById('prev-btn'),
-            markBtn: document.getElementById('mark-btn'),
-            result: document.getElementById('result'),
-            explanation: document.getElementById('explanation'),
-            stats: document.getElementById('stats'),
-            noteArea: document.getElementById('note-area'),
-            noteText: document.getElementById('note-text'),
-            saveNote: document.getElementById('save-note'),
-            nextBtn: document.getElementById('next-btn'),
-            profileLink: document.getElementById('profile-link'),
-            reviewLink: document.getElementById('review-link'),
-            saveProgressBtn: document.getElementById('save-progress-btn'),
-            showAnswerBtn: document.getElementById('show-answer-btn'),
-            backToQuiz: document.getElementById('back-to-quiz'),
-            backToQuizFromReview: document.getElementById('back-to-quiz-from-review'),
-            quizView: document.getElementById('quiz-view'),
-            profileView: document.getElementById('profile-view'),
-            reviewView: document.getElementById('review-view'),
-            syncStatus: document.getElementById('sync-status'),
+            question:           document.getElementById('question'),
+            options:            document.getElementById('options'),
+            submit:             document.getElementById('submit'),
+            prevBtn:            document.getElementById('prev-btn'),
+            markBtn:            document.getElementById('mark-btn'),
+            result:             document.getElementById('result'),
+            explanation:        document.getElementById('explanation'),
+            stats:              document.getElementById('stats'),
+            noteArea:           document.getElementById('note-area'),
+            noteText:           document.getElementById('note-text'),
+            saveNote:           document.getElementById('save-note'),
+            nextBtn:            document.getElementById('next-btn'),
+            profileLink:        document.getElementById('profile-link'),
+            reviewLink:         document.getElementById('review-link'),
+            saveProgressBtn:    document.getElementById('save-progress-btn'),
+            showAnswerBtn:      document.getElementById('show-answer-btn'),
+            backToQuiz:         document.getElementById('back-to-quiz'),
+            quizView:           document.getElementById('quiz-view'),
+            profileView:        document.getElementById('profile-view'),
+            reviewSelectView:   document.getElementById('review-select-view'),
+            syncStatus:         document.getElementById('sync-status'),
+            sessionBanner:      document.getElementById('session-banner'),
+            mainControls:       document.getElementById('main-controls'),
             nav: {
-                judge: document.getElementById('nav-judge'),
+                judge:  document.getElementById('nav-judge'),
                 single: document.getElementById('nav-single'),
-                multi: document.getElementById('nav-multi')
+                multi:  document.getElementById('nav-multi')
             },
             profile: {
                 summary: document.getElementById('profile-summary'),
-                done: {
-                    judge: document.getElementById('profile-done-judge'),
-                    single: document.getElementById('profile-done-single'),
-                    multi: document.getElementById('profile-done-multi')
-                },
-                wrong: {
-                    judge: document.getElementById('profile-wrong-judge'),
-                    single: document.getElementById('profile-wrong-single'),
-                    multi: document.getElementById('profile-wrong-multi')
-                },
-                marked: {
-                    judge: document.getElementById('profile-marked-judge'),
-                    single: document.getElementById('profile-marked-single'),
-                    multi: document.getElementById('profile-marked-multi')
-                }
+                done:    { judge: document.getElementById('profile-done-judge'),   single: document.getElementById('profile-done-single'),   multi: document.getElementById('profile-done-multi') },
+                wrong:   { judge: document.getElementById('profile-wrong-judge'),  single: document.getElementById('profile-wrong-single'),  multi: document.getElementById('profile-wrong-multi') },
+                marked:  { judge: document.getElementById('profile-marked-judge'), single: document.getElementById('profile-marked-single'), multi: document.getElementById('profile-marked-multi') }
             }
         };
     },
@@ -83,16 +72,63 @@ export const ui = {
         return { judge: '判断题', single: '单选题', multi: '多选题' }[type] || '未知';
     },
 
+    getFilterLabel(filter) {
+        return { all: '错题 + 标记', wrong: '仅错题', marked: '仅标记' }[filter] || '';
+    },
+
     showSyncStatus(msg, type = 'info') {
         const el = document.getElementById('sync-status');
         if (!el) return;
         el.textContent = msg;
         el.className = `sync-status sync-${type}`;
         el.style.display = 'inline-block';
-        if (type !== 'loading') {
-            setTimeout(() => { el.style.display = 'none'; }, 3000);
+        if (type !== 'loading') setTimeout(() => { el.style.display = 'none'; }, 3000);
+    },
+
+    /**
+     * 切换会话 UI 状态
+     * main   → 显示模式/题型控件，隐藏 review banner
+     * review → 隐藏模式/题型控件，显示 review banner（含返回按钮和过滤标签）
+     */
+    setSessionUI(session, filter) {
+        const { mainControls, sessionBanner } = this.getContainer();
+        if (session === 'review') {
+            if (mainControls) mainControls.style.display = 'none';
+            if (sessionBanner) {
+                sessionBanner.style.display = 'flex';
+                const label = sessionBanner.querySelector('#session-label');
+                if (label) label.textContent = `📋 错题回顾 — ${this.getFilterLabel(filter)}`;
+            }
+        } else {
+            if (mainControls) mainControls.style.display = '';
+            if (sessionBanner) sessionBanner.style.display = 'none';
         }
     },
+
+    /** 无题目时显示提示 */
+    showEmptyReview(filter) {
+        const { question: qDiv, options: oDiv, submit, showAnswerBtn, result, explanation, stats, noteArea } = this.getContainer();
+        qDiv.innerHTML = `<p class="empty-tip">暂无「${this.getFilterLabel(filter)}」题目</p>`;
+        oDiv.innerHTML = '';
+        result.innerHTML = '';
+        explanation.innerHTML = '';
+        stats.innerHTML = '';
+        noteArea.style.display = 'none';
+        submit.style.display = 'none';
+        if (showAnswerBtn) showAnswerBtn.style.display = 'none';
+        this.renderQuestionNavigation([], 0, {});
+    },
+
+    // ── 视图切换 ──────────────────────────────────────────────
+
+    setView(view) {
+        const { quizView, profileView, reviewSelectView } = this.getContainer();
+        quizView.style.display         = view === 'quiz'          ? 'block' : 'none';
+        profileView.style.display      = view === 'profile'       ? 'block' : 'none';
+        reviewSelectView.style.display = view === 'review-select' ? 'block' : 'none';
+    },
+
+    // ── 题目渲染 ──────────────────────────────────────────────
 
     renderQuestion(question, index, total, { marked } = {}) {
         const { question: qDiv, options: oDiv, submit, showAnswerBtn, result, explanation, stats, noteArea, markBtn } = this.getContainer();
@@ -139,7 +175,6 @@ export const ui = {
         noteText.value = stat.note || '';
     },
 
-    /** 显示答案但不计入答题记录，不影响提交按钮 */
     renderShowAnswer(question, stat) {
         const { submit, showAnswerBtn, result, explanation, stats, noteArea, noteText } = this.getContainer();
         submit.style.display = 'none';
@@ -151,12 +186,7 @@ export const ui = {
         noteText.value = stat.note || '';
     },
 
-    setView(view) {
-        const { quizView, profileView, reviewView } = this.getContainer();
-        quizView.style.display = view === 'quiz' ? 'block' : 'none';
-        profileView.style.display = view === 'profile' ? 'block' : 'none';
-        reviewView.style.display = view === 'review' ? 'block' : 'none';
-    },
+    // ── 导航栏 ────────────────────────────────────────────────
 
     renderQuestionNavigation(questions, currentIndex, records) {
         const { nav } = this.getContainer();
@@ -182,8 +212,8 @@ export const ui = {
             items.slice(0, limit).forEach(({ q, idx }) => {
                 const qid = `${q.type}_${q.id}`;
                 const record = records[qid] || {};
-                const done = (record.correctCount || 0) + (record.wrongCount || 0) > 0;
-                const wrong = (record.wrongCount || 0) > 0;
+                const done   = (record.correctCount || 0) + (record.wrongCount || 0) > 0;
+                const wrong  = (record.wrongCount || 0) > 0;
                 const marked = !!record.isMarked;
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -192,8 +222,8 @@ export const ui = {
                 btn.dataset.index = String(idx);
                 btn.dataset.qid = qid;
                 if (idx === currentIndex) btn.classList.add('is-current');
-                if (done) btn.classList.add('is-done');
-                if (wrong) btn.classList.add('is-wrong');
+                if (done)   btn.classList.add('is-done');
+                if (wrong)  btn.classList.add('is-wrong');
                 if (marked) btn.classList.add('is-marked');
                 container.appendChild(btn);
             });
@@ -213,6 +243,8 @@ export const ui = {
         this.applyNavExpanded();
     },
 
+    // ── 个人信息 ──────────────────────────────────────────────
+
     renderProfile(allQuestions, records) {
         const { profile } = this.getContainer();
         const questionByQid = new Map(allQuestions.map(q => [`${q.type}_${q.id}`, q]));
@@ -229,7 +261,6 @@ export const ui = {
 
         const sortFn = (a, b) => a.type !== b.type ? a.type.localeCompare(b.type)
             : String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
-
         [done, wrong, marked].forEach(arr => arr.sort(sortFn));
 
         profile.summary.innerHTML = `<div>总题数：${allQuestions.length}，已做：${done.length}，错题：${wrong.length}，标记：${marked.length}</div>`;
@@ -258,63 +289,8 @@ export const ui = {
         };
 
         const dG = groupByType(done), wG = groupByType(wrong), mG = groupByType(marked);
-        fillGrid(profile.done.judge, dG.judge);
-        fillGrid(profile.done.single, dG.single);
-        fillGrid(profile.done.multi, dG.multi);
-        fillGrid(profile.wrong.judge, wG.judge);
-        fillGrid(profile.wrong.single, wG.single);
-        fillGrid(profile.wrong.multi, wG.multi);
-        fillGrid(profile.marked.judge, mG.judge);
-        fillGrid(profile.marked.single, mG.single);
-        fillGrid(profile.marked.multi, mG.multi);
-    },
-
-    /** 渲染错题刷题页 */
-    renderReviewList(questions, records, filter) {
-        const container = document.getElementById('review-list');
-        if (!container) return;
-
-        let items = questions.filter(q => {
-            const qid = `${q.type}_${q.id}`;
-            const stat = records[qid] || {};
-            if (filter === 'wrong') return stat.wrongCount > 0;
-            if (filter === 'marked') return stat.isMarked;
-            return stat.wrongCount > 0 || stat.isMarked;
-        });
-
-        const sortFn = (a, b) => a.type !== b.type ? a.type.localeCompare(b.type)
-            : String(a.id).localeCompare(String(b.id), undefined, { numeric: true });
-        items.sort(sortFn);
-
-        container.innerHTML = '';
-        if (items.length === 0) {
-            container.innerHTML = '<p class="empty-tip">暂无符合条件的题目</p>';
-            return;
-        }
-
-        items.forEach(q => {
-            const qid = `${q.type}_${q.id}`;
-            const stat = records[qid] || {};
-            const card = document.createElement('div');
-            card.className = 'review-card';
-            card.dataset.qid = qid;
-
-            const tags = [];
-            if (stat.wrongCount > 0) tags.push(`<span class="tag-wrong">错题 ×${stat.wrongCount}</span>`);
-            if (stat.isMarked) tags.push(`<span class="tag-marked">已标记</span>`);
-
-            card.innerHTML = `
-                <div class="review-card-header">
-                    <span class="review-type">[${this.getTypeLabel(q.type)}] #${q.id}</span>
-                    <span class="review-tags">${tags.join('')}</span>
-                </div>
-                <div class="review-question">${q.question}</div>
-                <div class="review-actions">
-                    <button class="btn btn-compact btn-primary review-go" data-qid="${qid}">去做这题</button>
-                    ${stat.isMarked ? `<button class="btn btn-compact btn-secondary review-unmark" data-qid="${qid}">移除标记</button>` : ''}
-                </div>
-            `;
-            container.appendChild(card);
-        });
+        fillGrid(profile.done.judge,   dG.judge);   fillGrid(profile.done.single,   dG.single);   fillGrid(profile.done.multi,   dG.multi);
+        fillGrid(profile.wrong.judge,  wG.judge);   fillGrid(profile.wrong.single,  wG.single);   fillGrid(profile.wrong.multi,  wG.multi);
+        fillGrid(profile.marked.judge, mG.judge);   fillGrid(profile.marked.single, mG.single);   fillGrid(profile.marked.multi, mG.multi);
     }
 };

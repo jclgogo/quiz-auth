@@ -6,6 +6,7 @@
     --review-color: #e67e22;
     --save-color: #16a085;
     --login-color: #2c3e50;
+    --answer-color: #7f8c8d;
     --background-color: #f4f7f6;
     --card-background: #ffffff;
     --text-color: #333;
@@ -33,7 +34,7 @@ body {
 header {
     text-align: center;
     border-bottom: 2px solid var(--border-color);
-    padding-bottom: 20px;
+    padding-bottom: 16px;
     margin-bottom: 30px;
 }
 
@@ -44,7 +45,7 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
-    margin-top: 15px;
+    margin-top: 12px;
 }
 
 .control-group {
@@ -54,13 +55,23 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     font-size: 0.9em;
 }
 
-/* sync status */
-.sync-status {
-    font-size: 0.82em;
-    padding: 3px 10px;
-    border-radius: 12px;
+/* session banner（review模式时显示） */
+.session-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding: 10px 16px;
+    background: #fff8f0;
+    border: 1px solid #f0c080;
+    border-radius: 8px;
+    font-size: 0.95em;
     font-weight: 500;
+    color: #8a5a00;
 }
+
+/* sync status */
+.sync-status { font-size: 0.82em; padding: 3px 10px; border-radius: 12px; font-weight: 500; }
 .sync-loading { background: #fff3cd; color: #856404; }
 .sync-success { background: #d1edda; color: #155724; }
 .sync-error   { background: #f8d7da; color: #721c24; }
@@ -76,16 +87,17 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     cursor: pointer;
     transition: opacity 0.2s, transform 0.1s;
 }
-.btn:hover   { opacity: 0.88; }
-.btn:active  { transform: scale(0.97); }
+.btn:hover  { opacity: 0.88; }
+.btn:active { transform: scale(0.97); }
 .btn-primary    { background-color: var(--primary-color); color: white; }
 .btn-success    { background-color: var(--success-color); color: white; }
 .btn-secondary  { background-color: var(--secondary-color); color: white; }
 .btn-save       { background-color: var(--save-color); color: white; }
 .btn-review     { background-color: var(--review-color); color: white; }
 .btn-login      { background-color: var(--login-color); color: white; }
+.btn-answer     { background-color: var(--answer-color); color: white; }
 .btn-logged-in  { background-color: #27ae60; color: white; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.btn-answer     { background-color: #7f8c8d; color: white; }
+.btn-compact    { padding: 8px 16px; font-size: 0.88em; }
 
 /* layout */
 .layout { display: flex; gap: 20px; }
@@ -123,11 +135,11 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     user-select: none;
     transition: all 0.15s;
 }
-.nav-box:hover     { border-color: var(--primary-color); background: #f0f7ff; }
-.nav-box.is-current{ outline: 2px solid var(--primary-color); border-color: var(--primary-color); }
-.nav-box.is-done   { background: #eefaf1; border-color: #bfe7c8; }
-.nav-box.is-wrong  { background: #fdeeee; border-color: #f3b3b3; }
-.nav-box.is-marked { box-shadow: inset 0 0 0 2px var(--secondary-color); }
+.nav-box:hover      { border-color: var(--primary-color); background: #f0f7ff; }
+.nav-box.is-current { outline: 2px solid var(--primary-color); border-color: var(--primary-color); }
+.nav-box.is-done    { background: #eefaf1; border-color: #bfe7c8; }
+.nav-box.is-wrong   { background: #fdeeee; border-color: #f3b3b3; }
+.nav-box.is-marked  { box-shadow: inset 0 0 0 2px var(--secondary-color); }
 
 /* question */
 .question-card {
@@ -162,8 +174,8 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
 
 .feedback-area { border-top: 1px solid var(--border-color); padding-top: 20px; }
 #result { font-size: 1.1em; margin-bottom: 15px; }
-.correct { color: #27ae60; font-weight: bold; }
-.wrong   { color: var(--danger-color); font-weight: bold; }
+.correct           { color: #27ae60; font-weight: bold; }
+.wrong             { color: var(--danger-color); font-weight: bold; }
 .show-answer-label { color: #5d6d7e; font-weight: bold; }
 
 .tag-wrong  { background: #fde2e2; color: #c0392b; border-radius: 4px; padding: 2px 8px; font-size: 0.82em; }
@@ -186,49 +198,50 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
 
 /* profile */
 .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-.profile-stats {
-    background: #f9f9f9;
-    border: 1px solid var(--border-color);
-    border-radius: 10px;
-    padding: 12px 14px;
-    margin-bottom: 20px;
-}
+.profile-stats { background: #f9f9f9; border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; margin-bottom: 20px; }
 .profile-section + .profile-section { margin-top: 20px; }
 .profile-type { margin-top: 10px; }
 .profile-type-title { font-weight: bold; margin-bottom: 8px; }
 
-/* review */
-.review-filters { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-.review-filter-btn { background: #f0f0f0; color: #555; border: 1px solid #ddd; }
-.review-filter-btn.active { background: var(--review-color); color: white; border-color: var(--review-color); }
+/* ── 错题回顾选择页 ── */
+.review-select-header { text-align: center; margin-bottom: 30px; }
+.review-select-header h2 { margin: 0 0 8px; color: var(--review-color); }
+.review-select-header p  { color: #888; margin: 0; font-size: 0.95em; }
 
-.review-card {
+.review-select-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.review-select-card {
     background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
-    border-left: 4px solid var(--danger-color);
-    transition: box-shadow 0.15s;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 28px 16px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.18s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 }
-.review-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
-.review-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.review-type { font-weight: bold; font-size: 0.88em; color: #888; }
-.review-tags { display: flex; gap: 6px; }
-.review-question {
-    font-size: 0.95em;
-    color: #333;
-    margin-bottom: 12px;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+.review-select-card:hover {
+    border-color: var(--review-color);
+    background: #fff8f0;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(230,126,34,0.15);
 }
-.review-actions { display: flex; gap: 8px; }
-.empty-tip { color: #aaa; text-align: center; padding: 40px 0; font-size: 0.95em; }
+.rsc-icon  { font-size: 2em; }
+.rsc-title { font-weight: bold; font-size: 1em; color: #333; }
+.rsc-desc  { font-size: 0.82em; color: #888; }
 
-/* ─── 登录弹窗 ─────────────────────────────────── */
+.empty-tip { color: #aaa; text-align: center; padding: 60px 0; font-size: 0.95em; }
+
+/* ── 登录弹窗 ── */
 .auth-overlay {
     position: fixed;
     inset: 0;
@@ -239,7 +252,6 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     justify-content: center;
     padding: 20px;
 }
-
 .auth-modal {
     background: white;
     border-radius: 16px;
@@ -249,24 +261,14 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     box-shadow: 0 20px 60px rgba(0,0,0,0.2);
     animation: modal-in 0.2s ease;
 }
-
 @keyframes modal-in {
     from { opacity: 0; transform: translateY(-16px) scale(0.97); }
     to   { opacity: 1; transform: translateY(0) scale(1); }
 }
-
 .auth-header { text-align: center; margin-bottom: 28px; }
 .auth-header h2 { margin: 0 0 6px; color: var(--login-color); font-size: 1.5em; }
 .auth-sub { color: #888; font-size: 0.9em; margin: 0; }
-
-.auth-label {
-    display: block;
-    font-size: 0.88em;
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 8px;
-}
-
+.auth-label { display: block; font-size: 0.88em; font-weight: 600; color: #555; margin-bottom: 8px; }
 .auth-input {
     width: 100%;
     padding: 12px 16px;
@@ -279,52 +281,13 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     margin-bottom: 14px;
 }
 .auth-input:focus { border-color: var(--primary-color); }
-
-.auth-pin {
-    font-size: 1.5em;
-    letter-spacing: 10px;
-    text-align: center;
-    font-weight: bold;
-}
-
-.auth-btn {
-    width: 100%;
-    padding: 13px;
-    font-size: 1em;
-    border-radius: 8px;
-    margin-bottom: 14px;
-}
-
-.auth-hint {
-    font-size: 0.9em;
-    color: #555;
-    margin: 0 0 18px;
-    text-align: center;
-}
-
-.auth-resend-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.auth-resend-link, .auth-link {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    font-size: 0.88em;
-    padding: 4px 0;
-    text-decoration: underline;
-}
+.auth-pin { font-size: 1.5em; letter-spacing: 10px; text-align: center; font-weight: bold; }
+.auth-btn { width: 100%; padding: 13px; font-size: 1em; border-radius: 8px; margin-bottom: 14px; }
+.auth-hint { font-size: 0.9em; color: #555; margin: 0 0 18px; text-align: center; }
+.auth-resend-row { display: flex; justify-content: space-between; align-items: center; }
+.auth-resend-link, .auth-link { background: none; border: none; color: var(--primary-color); cursor: pointer; font-size: 0.88em; padding: 4px 0; text-decoration: underline; }
 .auth-resend-link:disabled { color: #aaa; text-decoration: none; cursor: default; }
-
-.auth-error {
-    color: var(--danger-color);
-    font-size: 0.88em;
-    min-height: 20px;
-    margin-top: 6px;
-}
+.auth-error { color: var(--danger-color); font-size: 0.88em; min-height: 20px; margin-top: 6px; }
 
 /* mobile */
 @media (max-width: 640px) {
@@ -333,6 +296,7 @@ h1 { color: var(--primary-color); margin: 0 0 12px; }
     .layout { flex-direction: column; }
     .sidebar { width: auto; flex: 0 0 auto; max-height: none; }
     .nav-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-    .review-card-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .review-select-cards { grid-template-columns: 1fr; }
     .auth-modal { padding: 28px 20px; }
+    .session-banner { flex-direction: column; gap: 8px; text-align: center; }
 }
