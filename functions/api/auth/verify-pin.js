@@ -15,6 +15,12 @@ export async function onRequestPost({ request, env }) {
         const normalizedEmail = email.trim().toLowerCase();
         const now = Date.now();
 
+        // Mock 账号：跳过验证码校验，直接登录，userId 取 map 里配置的值
+        const mockMap = parseMockAccounts(env.MOCK_ACCOUNTS);
+        if (mockMap[normalizedEmail] !== undefined) {
+            return Response.json({ ok: true, userId: mockMap[normalizedEmail] });
+        }
+
         const record = await env.DB.prepare(
             `SELECT pin, expires_at, attempts FROM auth_pins WHERE email = ?`
         ).bind(normalizedEmail).first();
@@ -51,4 +57,9 @@ export async function onRequestPost({ request, env }) {
         console.error('verify-pin error:', e);
         return Response.json({ error: '服务器错误，请稍后重试' }, { status: 500 });
     }
+}
+
+function parseMockAccounts(raw) {
+    if (!raw) return {};
+    try { return JSON.parse(raw); } catch { return {}; }
 }

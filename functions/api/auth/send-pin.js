@@ -14,6 +14,13 @@ export async function onRequestPost({ request, env }) {
 
         const normalizedEmail = email.trim().toLowerCase();
 
+        // Mock 账号：命中则直接返回成功，不发邮件
+        // ENV: MOCK_ACCOUNTS = {"test@a.com":"user_001","test@b.com":"user_002"}
+        const mockMap = parseMockAccounts(env.MOCK_ACCOUNTS);
+        if (mockMap[normalizedEmail] !== undefined) {
+            return Response.json({ ok: true, mock: true, message: 'Mock账号，直接输入任意验证码登录' });
+        }
+
         // 限流：同一邮箱60秒内只能发一次
         const recent = await env.DB.prepare(
             `SELECT created_at FROM auth_pins WHERE email = ? AND created_at > ? ORDER BY created_at DESC LIMIT 1`
@@ -72,4 +79,9 @@ export async function onRequestPost({ request, env }) {
 
 function isValidEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function parseMockAccounts(raw) {
+    if (!raw) return {};
+    try { return JSON.parse(raw); } catch { return {}; }
 }
