@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 刷题系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI 刷题系统</h1>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="mode-select">模式：</label>
+                    <select id="mode-select">
+                        <option value="sequential">顺序</option>
+                        <option value="random">随机</option>
+                        <option value="wrong">错题</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>题型：</label>
+                    <label><input type="checkbox" name="type-filter" value="judge" checked> 判断</label>
+                    <label><input type="checkbox" name="type-filter" value="single" checked> 单选</label>
+                    <label><input type="checkbox" name="type-filter" value="multi" checked> 多选</label>
+                </div>
+                <div class="control-group">
+                    <button id="save-progress-btn" class="btn btn-compact btn-save">💾 保存进度</button>
+                    <span id="sync-status" class="sync-status" style="display:none"></span>
+                </div>
+                <div class="control-group">
+                    <button id="review-link" class="btn btn-compact btn-review">📋 错题回顾</button>
+                    <button id="profile-link" class="btn btn-compact btn-secondary">👤 个人信息</button>
+                    <button id="auth-btn" class="btn btn-compact btn-login">🔑 登录</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="layout">
+            <aside class="sidebar" id="question-nav">
+                <div class="nav-section">
+                    <div class="nav-title">判断题</div>
+                    <div class="nav-grid" id="nav-judge"></div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">单选题</div>
+                    <div class="nav-grid" id="nav-single"></div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-title">多选题</div>
+                    <div class="nav-grid" id="nav-multi"></div>
+                </div>
+            </aside>
+
+            <section class="content">
+                <!-- 刷题视图 -->
+                <div id="quiz-view">
+                    <div id="question" class="question-card">
+                        <p>正在加载题库...</p>
+                    </div>
+                    <div id="options" class="options-group"></div>
+                    <div class="action-bar">
+                        <button id="prev-btn" class="btn btn-secondary">上一题</button>
+                        <button id="mark-btn" class="btn btn-secondary">标记</button>
+                        <button id="show-answer-btn" class="btn btn-answer">显示答案</button>
+                        <button id="submit" class="btn btn-primary">提交答案</button>
+                        <button id="next-btn" class="btn btn-success">下一题</button>
+                    </div>
+                    <div id="feedback" class="feedback-area">
+                        <div id="result"></div>
+                        <div id="explanation"></div>
+                        <div id="stats"></div>
+                        <div id="note-area" style="display:none;">
+                            <h4>学习笔记：</h4>
+                            <textarea id="note-text" placeholder="在这里输入你的笔记..."></textarea>
+                            <button id="save-note" class="btn btn-secondary">保存笔记</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 个人信息视图 -->
+                <div id="profile-view" style="display:none;">
+                    <div class="profile-header">
+                        <h2>个人信息</h2>
+                        <button id="back-to-quiz" class="btn btn-secondary">返回刷题</button>
+                    </div>
+                    <div class="profile-stats" id="profile-summary"></div>
+                    <div class="profile-section">
+                        <h3>已做的题</h3>
+                        <div class="profile-type"><div class="profile-type-title">判断题</div><div class="nav-grid" id="profile-done-judge"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">单选题</div><div class="nav-grid" id="profile-done-single"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">多选题</div><div class="nav-grid" id="profile-done-multi"></div></div>
+                    </div>
+                    <div class="profile-section">
+                        <h3>错题</h3>
+                        <div class="profile-type"><div class="profile-type-title">判断题</div><div class="nav-grid" id="profile-wrong-judge"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">单选题</div><div class="nav-grid" id="profile-wrong-single"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">多选题</div><div class="nav-grid" id="profile-wrong-multi"></div></div>
+                    </div>
+                    <div class="profile-section">
+                        <h3>标记的题</h3>
+                        <div class="profile-type"><div class="profile-type-title">判断题</div><div class="nav-grid" id="profile-marked-judge"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">单选题</div><div class="nav-grid" id="profile-marked-single"></div></div>
+                        <div class="profile-type"><div class="profile-type-title">多选题</div><div class="nav-grid" id="profile-marked-multi"></div></div>
+                    </div>
+                </div>
+
+                <!-- 错题回顾视图 -->
+                <div id="review-view" style="display:none;">
+                    <div class="profile-header">
+                        <h2>错题回顾</h2>
+                        <button id="back-to-quiz-from-review" class="btn btn-secondary">返回刷题</button>
+                    </div>
+                    <div class="review-filters">
+                        <button class="btn btn-compact review-filter-btn active" data-filter="all">全部（错题+标记）</button>
+                        <button class="btn btn-compact review-filter-btn" data-filter="wrong">仅错题</button>
+                        <button class="btn btn-compact review-filter-btn" data-filter="marked">仅标记</button>
+                    </div>
+                    <div id="review-list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

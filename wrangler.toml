@@ -1,0 +1,8 @@
+name = "quiz-app"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+[[d1_databases]]
+binding = "DB"
+database_name = "quiz-db"
+database_id = "d7dcc206-21f0-45eb-a1cf-edc266bcfa01"
