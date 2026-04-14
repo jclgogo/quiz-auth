@@ -1,20 +1,16 @@
-/**
- * auth.js - 前端登录弹窗逻辑
- * 管理登录弹窗的显示、发送验证码、验证登录
- */
-
 import { storage } from './storage.js';
 
 class AuthManager {
     constructor() {
-        this.onLoginSuccess = null; // 登录成功回调
-        this._step = 'email';      // 'email' | 'pin'
+        this.onLoginSuccess = null;
+
         this._pendingEmail = '';
         this._countdown = 0;
         this._countdownTimer = null;
+
+        this._isMock = false;
     }
 
-    /** 初始化：注入HTML、绑定事件 */
     init(onLoginSuccess) {
         this.onLoginSuccess = onLoginSuccess;
         this._injectModal();
@@ -30,7 +26,7 @@ class AuthManager {
                     <p class="auth-sub">用邮箱登录，数据跨设备同步</p>
                 </div>
 
-                <!-- Step 1: 输入邮箱 -->
+                <!-- Email -->
                 <div id="auth-step-email" class="auth-step">
                     <label class="auth-label">邮箱地址</label>
                     <input type="email" id="auth-email-input" class="auth-input"
@@ -39,17 +35,23 @@ class AuthManager {
                     <div id="auth-email-error" class="auth-error"></div>
                 </div>
 
-                <!-- Step 2: 输入验证码 -->
+                <!-- PIN -->
                 <div id="auth-step-pin" class="auth-step" style="display:none;">
-                    <p class="auth-hint">验证码已发送至 <strong id="auth-email-show"></strong></p>
+                    <p class="auth-hint" id="auth-hint"></p>
+
                     <label class="auth-label">6位验证码</label>
                     <input type="text" id="auth-pin-input" class="auth-input auth-pin"
-                        placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code"/>
+                        placeholder="000000" maxlength="6" inputmode="numeric"/>
+
                     <button id="auth-verify-btn" class="btn btn-primary auth-btn">登录</button>
+
                     <div class="auth-resend-row">
-                        <button id="auth-resend-btn" class="auth-resend-link" disabled>重新发送(<span id="auth-countdown">60</span>s)</button>
+                        <button id="auth-resend-btn" class="auth-resend-link" disabled>
+                            重新发送(<span id="auth-countdown">60</span>s)
+                        </button>
                         <button id="auth-back-btn" class="auth-link">换个邮箱</button>
                     </div>
+
                     <div id="auth-pin-error" class="auth-error"></div>
                 </div>
             </div>
@@ -58,21 +60,23 @@ class AuthManager {
     }
 
     _bindEvents() {
-        // 发送验证码
         document.getElementById('auth-send-btn').onclick = () => this._sendPin();
-        // 邮箱输入框按回车
-        document.getElementById('auth-email-input').onkeydown = (e) => { if (e.key === 'Enter') this._sendPin(); };
-        // 验证
+
+        document.getElementById('auth-email-input').onkeydown = (e) => {
+            if (e.key === 'Enter') this._sendPin();
+        };
+
         document.getElementById('auth-verify-btn').onclick = () => this._verifyPin();
-        // 验证码输入框按回车
-        document.getElementById('auth-pin-input').onkeydown = (e) => { if (e.key === 'Enter') this._verifyPin(); };
-        // 重新发送
+
+        document.getElementById('auth-pin-input').onkeydown = (e) => {
+            if (e.key === 'Enter') this._verifyPin();
+        };
+
         document.getElementById('auth-resend-btn').onclick = () => this._sendPin(true);
-        // 返回输入邮箱
+
         document.getElementById('auth-back-btn').onclick = () => this._goToEmailStep();
     }
 
-    /** 显示登录弹窗 */
     show() {
         this._goToEmailStep();
         document.getElementById('auth-overlay').style.display = 'flex';
@@ -83,10 +87,17 @@ class AuthManager {
         document.getElementById('auth-overlay').style.display = 'none';
     }
 
+    // =========================
+    // Send PIN
+    // =========================
     async _sendPin(isResend = false) {
         const emailInput = document.getElementById('auth-email-input');
-        const email = (isResend ? this._pendingEmail : emailInput.value.trim()).toLowerCase();
         const errorEl = document.getElementById('auth-email-error');
+        const sendBtn = document.getElementById('auth-send-btn');
+
+        const email = (isResend ? this._pendingEmail : emailInput.value)
+            .trim()
+            .toLowerCase();
 
         if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
             errorEl.textContent = '请输入有效的邮箱地址';
@@ -94,7 +105,6 @@ class AuthManager {
         }
 
         errorEl.textContent = '';
-        const sendBtn = document.getElementById('auth-send-btn');
         sendBtn.disabled = true;
         sendBtn.textContent = '发送中...';
 
@@ -104,18 +114,26 @@ class AuthManager {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
             });
+
             const data = await res.json();
 
             if (!res.ok) {
-                errorEl.textContent = data.error || '发送失败，请重试';
+                errorEl.textContent = data.error || '发送失败';
                 sendBtn.disabled = false;
                 sendBtn.textContent = '发送验证码';
                 return;
             }
 
+            // ===== 成功 =====
             this._pendingEmail = email;
-            this._goToPinStep();
+            this._isMock = !!data.mock;
+
+            this._goToPinStep(this._isMock);
             this._startCountdown();
+
+            // 统一提示（关键修复）
+            this._toast(data.message || '验证码已发送');
+
         } catch (e) {
             errorEl.textContent = '网络错误，请重试';
             sendBtn.disabled = false;
@@ -123,9 +141,13 @@ class AuthManager {
         }
     }
 
+    // =========================
+    // Verify PIN
+    // =========================
     async _verifyPin() {
         const pin = document.getElementById('auth-pin-input').value.trim();
         const errorEl = document.getElementById('auth-pin-error');
+        const btn = document.getElementById('auth-verify-btn');
 
         if (!pin || pin.length !== 6) {
             errorEl.textContent = '请输入6位验证码';
@@ -133,69 +155,105 @@ class AuthManager {
         }
 
         errorEl.textContent = '';
-        const verifyBtn = document.getElementById('auth-verify-btn');
-        verifyBtn.disabled = true;
-        verifyBtn.textContent = '验证中...';
+        btn.disabled = true;
+        btn.textContent = '验证中...';
 
         try {
             const res = await fetch('/api/auth/verify-pin', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: this._pendingEmail, pin })
+                body: JSON.stringify({
+                    email: this._pendingEmail,
+                    pin
+                })
             });
+
             const data = await res.json();
 
             if (!res.ok) {
                 errorEl.textContent = data.error || '验证失败';
-                verifyBtn.disabled = false;
-                verifyBtn.textContent = '登录';
+                btn.disabled = false;
+                btn.textContent = '登录';
                 return;
             }
 
-            // 登录成功
             storage.setAuth(data.userId, this._pendingEmail);
+
             this.hide();
             this._stopCountdown();
+
+            this._toast('登录成功');
+
             if (this.onLoginSuccess) this.onLoginSuccess();
+
         } catch (e) {
             errorEl.textContent = '网络错误，请重试';
-            verifyBtn.disabled = false;
-            verifyBtn.textContent = '登录';
+            btn.disabled = false;
+            btn.textContent = '登录';
         }
     }
 
+    // =========================
+    // UI steps
+    // =========================
     _goToEmailStep() {
         document.getElementById('auth-step-email').style.display = 'block';
         document.getElementById('auth-step-pin').style.display = 'none';
-        document.getElementById('auth-send-btn').disabled = false;
-        document.getElementById('auth-send-btn').textContent = '发送验证码';
+
         document.getElementById('auth-email-error').textContent = '';
-        this._step = 'email';
+
+        const sendBtn = document.getElementById('auth-send-btn');
+        sendBtn.disabled = false;
+        sendBtn.textContent = '发送验证码';
     }
 
-    _goToPinStep() {
+    _goToPinStep(isMock = false) {
         document.getElementById('auth-step-email').style.display = 'none';
         document.getElementById('auth-step-pin').style.display = 'block';
-        document.getElementById('auth-email-show').textContent = this._pendingEmail;
+
+        const hint = document.getElementById('auth-hint');
+
+        if (isMock) {
+            hint.innerHTML = `
+                ⚡ Mock账号：<b>${this._pendingEmail}</b><br/>
+                任意6位验证码即可登录
+            `;
+        } else {
+            hint.innerHTML = `
+                验证码已发送至 <b>${this._pendingEmail}</b>
+            `;
+        }
+
         document.getElementById('auth-pin-input').value = '';
         document.getElementById('auth-pin-error').textContent = '';
-        document.getElementById('auth-verify-btn').disabled = false;
-        document.getElementById('auth-verify-btn').textContent = '登录';
-        this._step = 'pin';
-        setTimeout(() => document.getElementById('auth-pin-input').focus(), 100);
+
+        const btn = document.getElementById('auth-verify-btn');
+        btn.disabled = false;
+        btn.textContent = '登录';
+
+        setTimeout(() => {
+            document.getElementById('auth-pin-input').focus();
+        }, 100);
     }
 
+    // =========================
+    // Countdown
+    // =========================
     _startCountdown(seconds = 60) {
         this._stopCountdown();
+
         this._countdown = seconds;
+
         const btn = document.getElementById('auth-resend-btn');
         const span = document.getElementById('auth-countdown');
+
         btn.disabled = true;
-        span.textContent = this._countdown;
+        span.textContent = seconds;
 
         this._countdownTimer = setInterval(() => {
             this._countdown--;
             span.textContent = this._countdown;
+
             if (this._countdown <= 0) {
                 this._stopCountdown();
                 btn.disabled = false;
@@ -209,6 +267,15 @@ class AuthManager {
             clearInterval(this._countdownTimer);
             this._countdownTimer = null;
         }
+    }
+
+    // =========================
+    // simple toast
+    // =========================
+    _toast(msg) {
+        console.log('[AUTH]', msg);
+        // 你可以替换成真正 UI toast
+        // e.g. showToast(msg)
     }
 }
 
